@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Building & Testing Simulator - Full Master Edition</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #fff; margin: 20px; }
+        h1, h2, h3 { color: #00ffcc; margin-top: 0; text-align: center; }
+        
+        /* Bar Top Navigation & Stats */
+        .stats-bar { display: flex; justify-content: space-around; background: #1b1b1b; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; margin-bottom: 20px; text-align: center; }
+        .stat-val { font-size: 20px; font-weight: bold; color: #00ff66; }
+        
+        /* Layout Main Grid */
+        .grid-container { display: grid; grid-template-columns: 1fr 1.2fr 1.1fr; gap: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        
+        /* Customer Box */
+        .customer-card { background: #252a34; border-left: 5px solid #00ffcc; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .customer-name { font-size: 18px; font-weight: bold; color: #ff2e63; }
+        .req-tag { display: inline-block; background: #08d9d6; color: #111; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px; }
+
+        /* Form Controls */
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 13px; color: #ccc; }
+        select, button { width: 100%; padding: 8px 10px; margin: 4px 0 8px 0; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
+        button { background: #00ffcc; color: #111; font-weight: bold; cursor: pointer; border: none; padding: 12px; font-size: 14px; margin-top: 10px; border-radius: 4px; }
+        button:hover { background: #00cca3; }
+        
+        .result-box { background: #0a0a0a; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; line-height: 1.45; min-height: 480px; font-size: 13px; }
+        .pass { color: #00ff66; }
+        .warn { color: #ffcc00; }
+        .fail { color: #ff3333; }
+    </style>
+</head>
+<body>
+
+    <h1>🖥️ PC Building & Testing Master Simulator</h1>
+    
+    <!-- Informasi Statistik Toko & Budget -->
+    <div class="stats-bar">
+        <div>Kas Utama Toko: <br><span id="shop-money" class="stat-val">Rp 10.000.000</span></div>
+        <div>Modal Rakitan Saat Ini: <br><span id="cost-tracker" class="stat-val" style="color:#ffcc00">Rp 0</span></div>
+        <div>Sisa Budget Pelanggan: <br><span id="customer-budget-left" class="stat-val" style="color:#08d9d6">Rp 0</span></div>
+        <div>Pesanan Selesai: <br><span id="order-count" class="stat-val" style="color:#fff">0</span></div>
+    </div>
+
+    <div class="grid-container">
+        
+        <!-- KOLOM 1: Tiket Pesanan Pelanggan (Career Mode) -->
+        <div class="card">
+            <h2>📜 Tiket Pesanan #<span id="order-id">1</span></h2>
+            <div class="customer-card">
+                <div class="customer-name" id="c-name">Loading...</div>
+                <p id="c-desc" style="font-style: italic; color: #ccc;">"Saya mau PC..."</p>
+                <div style="margin-bottom: 5px;"><span class="req-tag">Budget Pelanggan</span> <strong id="c-budget" style="color: #00ff66;">Rp 0</strong></div>
+                <div style="margin-bottom: 5px;"><span class="req-tag">Game Utama</span> <strong id="c-game">-</strong></div>
+                <div style="margin-bottom: 5px;"><span class="req-tag">Target Minimal</span> <strong id="c-target">-</strong></div>
+            </div>
+            <button style="background: #ff2e63; color: white;" onclick="nextCustomer()">Lewatkan Pelanggan ⏭️</button>
+        </div>
+
+        <!-- KOLOM 2: Toko Hardware & Pemilihan 11 Part Lengkap -->
+        <div class="card" style="max-height: 80vh; overflow-y: auto;">
+            <h2>🛒 Toko Components (11 Part)</h2>
+
+            <label>1. CPU (Prosesor):</label>
+            <select id="cpu" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih CPU --</option>
+                <option value='{"name":"Intel Core i3-12100F","price":1400000,"score":12000,"tdp":58,"socket":"LGA1700"}'>Intel i3-12100F - Rp 1.4M</option>
+                <option value='{"name":"AMD Ryzen 5 5600X","price":2300000,"score":19000,"tdp":65,"socket":"AM4"}'>AMD Ryzen 5 5600X - Rp 2.3M</option>
+                <option value='{"name":"Intel Core i9-13900K","price":8500000,"score":38000,"tdp":253,"socket":"LGA1700"}'>Intel i9-13900K - Rp 8.5M</option>
+            </select>
+
+            <label>2. Motherboard:</label>
+            <select id="mobo" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih Motherboard --</option>
+                <option value='{"name":"B660M Micro-ATX","price":1600000,"socket":"LGA1700","form":"M-ATX"}'>B660M (M-ATX / LGA1700) - Rp 1.6M</option>
+                <option value='{"name":"B550M Micro-ATX","price":1500000,"socket":"AM4","form":"M-ATX"}'>B550M (M-ATX / AM4) - Rp 1.5M</option>
+                <option value='{"name":"Z790 ATX","price":4200000,"socket":"LGA1700","form":"ATX"}'>Z790 (ATX / LGA1700) - Rp 4.2M</option>
+            </select>
+
+            <label>3. CPU Cooler:</label>
+            <select id="cooler" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih Cooler --</option>
+                <option value='{"name":"Stock Cooler","price":150000,"cooling":50}'>Stock Air Cooler - Rp 150rb</option>
+                <option value='{"name":"Tower Air Cooler","price":500000,"cooling":80}'>Dual Tower Air Cooler - Rp 500rb</option>
+                <option value='{"name":"360mm AIO Liquid","price":1800000,"cooling":120}'>360mm AIO Liquid Cooler - Rp 1.8M</option>
+            </select>
+
+            <label>4. RAM:</label>
+            <select id="ram" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih RAM --</option>
+                <option value='{"name":"8GB DDR4 2666MHz","price":350000,"speed":2666,"size":8}'>8GB Single DDR4 - Rp 350rb</option>
+                <option value='{"name":"16GB DDR4 3200MHz","price":700000,"speed":3200,"size":16}'>16GB Dual DDR4 - Rp 700rb</option>
+                <option value='{"name":"32GB DDR5 6000MHz","price":1900000,"speed":6000,"size":32}'>32GB Dual DDR5 - Rp 1.9M</option>
+            </select>
+
+            <label>5. GPU (VGA Card):</label>
+            <select id="gpu" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih GPU --</option>
+                <option value='{"name":"NVIDIA GTX 1650","price":2100000,"score":8000,"tdp":75}'>GTX 1650 4GB - Rp 2.1M</option>
+                <option value='{"name":"NVIDIA RTX 3060","price":4500000,"score":17000,"tdp":170}'>RTX 3060 12GB - Rp 4.5M</option>
+                <option value='{"name":"NVIDIA RTX 4090","price":28000000,"score":36000,"tdp":450}'>RTX 4090 24GB - Rp 28M</option>
+            </select>
+
+            <label>6. Storage:</label>
+            <select id="storage" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih Storage --</option>
+                <option value='{"name":"1TB HDD","price":600000,"loadTime":2.5,"type":"HDD"}'>1TB HDD - Rp 600rb</option>
+                <option value='{"name":"500GB SATA SSD","price":500000,"loadTime":1.2,"type":"SSD"}'>500GB SATA SSD - Rp 500rb</option>
+                <option value='{"name":"1TB NVMe M.2 SSD","price":1100000,"loadTime":1.0,"type":"SSD"}'>1TB NVMe M.2 - Rp 1.1M</option>
+            </select>
+
+            <label>7. Power Supply (PSU):</label>
+            <select id="psu" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih PSU --</option>
+                <option value='{"name":"450W 80+","price":550000,"watt":450}'>450W 80+ Bronze - Rp 550rb</option>
+                <option value='{"name":"650W 80+","price":1100000,"watt":650}'>650W 80+ Gold - Rp 1.1M</option>
+                <option value='{"name":"1000W 80+","price":2700000,"watt":1000}'>1000W 80+ Platinum - Rp 2.7M</option>
+            </select>
+
+            <label>8. Case PC (Casing):</label>
+            <select id="case" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih Casing --</option>
+                <option value='{"name":"Mid Tower M-ATX","price":400000,"maxForm":"M-ATX"}'>Mid Tower Case (M-ATX) - Rp 400rb</option>
+                <option value='{"name":"Full Tower ATX","price":900000,"maxForm":"ATX"}'>Full Tower Case (ATX) - Rp 900rb</option>
+            </select>
+
+            <label>9. Case Fan (Kipas):</label>
+            <select id="fan" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih Fan --</option>
+                <option value='{"name":"1x Standard Fan","price":50000,"coolingBonus":2}'>1x Standard Fan - Rp 50rb</option>
+                <option value='{"name":"3x ARGB Fans Set","price":300000,"coolingBonus":10}'>3x ARGB Fans Pack - Rp 300rb</option>
+            </select>
+
+            <label>10. Thermal Paste:</label>
+            <select id="paste" onchange="updateCalculations()">
+                <option value='{"name":"None","price":0}'>-- Pilih Thermal Paste --</option>
+                <option value='{"name":"Standard Paste","price":30000,"coolingBonus":3}'>Standard Compound - Rp 30rb</option>
+                <option value='{"name":"High Performance Paste","price":120000,"coolingBonus":8}'>High-Performance Compound - Rp 120rb</option>
+            </select>
+
+            <label>11. Monitor Target:</label>
+            <select id="monitor">
+                <option value='{"name":"1080p Full HD","resFactor":1.0}'>1080p Full HD Monitor</option>
+                <option value='{"name":"1440p Quad HD","resFactor":1.4}'>1440p Quad HD Monitor</option>
+                <option value='{"name":"4K Ultra HD","resFactor":2.2}'>4K Ultra HD Monitor</option>
+            </select>
+
+            <button onclick="processBuild()">RAKIT, TESTING & SERAHKAN PC 🚚</button>
+        </div>
+
+        <!-- KOLOM 3: Pusat Pengujian Lengkap (Watt, Thermal, Bottleneck, Benchmark, FPS) -->
+        <div class="card">
+            <h2>📊 Dashboard Pengujian & Laporan</h2>
+            <div id="output" class="result-box">Lengkapi ke-11 komponen di toko sebelah kiri lalu klik tombol pengujian untuk menjalankan diagnostik...</div>
+        </div>
+
+    </div>
+
+    <script>
+        const CUSTOMERS = [
+            { name: "Budi (Esport Gamer)", desc: "Saya butuh PC terjangkau khusus main Valorant minimal 100 FPS. Tolong rakitkan yang pas!", budget: 10000000, game: "Valorant (1080p)", reqFps: 100, minRam: 8, reqType: "ANY" },
+            { name: "Siti (Streamer AAA)", desc: "Saya ingin main Cyberpunk 2077 di resolusi 1080p minimal 60 FPS rata kanan. PC Wajib pakai SSD!", budget: 16000000, game: "Cyberpunk 2077", reqFps: 60, minRam: 16, reqType: "SSD" },
+            { name: "Rian (Hardcore Enthusiast)", desc: "Rakitkan PC monster 4K Ultra untuk Cyberpunk minimal 80 FPS. Uang bukan masalah!", budget: 48000000, game: "Cyberpunk 4K", reqFps: 80, minRam: 32, reqType: "SSD" }
+        ];
+
+        let currentCustomer = {};
+        let shopMoney = 10000000;
+        let completedOrders = 0;
+        let currentOrderIndex = 0;
+
+        function formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+        }
+
+        function loadCustomer() {
+            currentCustomer = CUSTOMERS[currentOrderIndex % CUSTOMERS.length];
+            document.getElementById('c-name').innerText = currentCustomer.name;
+            document.getElementById('c-desc').innerText = `"${currentCustomer.desc}"`;
+            document.getElementById('c-budget').innerText = formatRupiah(currentCustomer.budget);
+            document.getElementById('c-game').innerText = currentCustomer.game;
+            document.getElementById('c-target').innerText = `${currentCustomer.reqFps} FPS | Min RAM ${currentCustomer.minRam}GB`;
+            document.getElementById('order-id').innerText = currentOrderIndex + 1;
+            updateCalculations();
+        }
+
+        function updateCalculations() {
+            const parts = ['cpu', 'mobo', 'cooler', 'ram', 'gpu', 'storage', 'psu', 'case', 'fan', 'paste'];
+            let totalCost = 0;
+
+            parts.forEach(p => {
+                totalCost += JSON.parse(document.getElementById(p).value).price;
+            });
+
+            const budgetLeft = currentCustomer.budget - totalCost;
+
+            document.getElementById('cost-tracker').innerText = formatRupiah(totalCost);
+            const budgetElem = document.getElementById('customer-budget-left');
+            budgetElem.innerText = formatRupiah(budgetLeft);
+
+            if (budgetLeft < 0) {
+                budgetElem.style.color = "#ff3333";
+            } else {
+                budgetElem.style.color = "#08d9d6";
+            }
+
+            return totalCost;
+        }
+
+        function nextCustomer() {
+            currentOrderIndex++;
+            loadCustomer();
+            document.getElementById('output').innerHTML = "Pelanggan baru telah datang! Silakan periksa pesanannya.";
+        }
+
+        function processBuild() {
+            const cpu = JSON.parse(document.getElementById('cpu').value);
+            const mobo = JSON.parse(document.getElementById('mobo').value);
+            const cooler = JSON.parse(document.getElementById('cooler').value);
+            const ram = JSON.parse(document.getElementById('ram').value);
+            const gpu = JSON.parse(document.getElementById('gpu').value);
+            const storage = JSON.parse(document.getElementById('storage').value);
+            const psu = JSON.parse(document.getElementById('psu').value);
+            const casePC = JSON.parse(document.getElementById('case').value);
+            const fan = JSON.parse(document.getElementById('fan').value);
+            const paste = JSON.parse(document.getElementById('paste').value);
+            const monitor = JSON.parse(document.getElementById('monitor').value);
+
+            let log = "";
+            const totalModal = updateCalculations();
+
+            // 1. Cek Kelengkapan Part (Seluruh Komponen Utama)
+            if ([cpu, mobo, cooler, ram, gpu, storage, psu, casePC, fan, paste].some(item => item.price === 0)) {
+                document.getElementById('output').innerHTML = `<span class="fail">❌ DIAGNOSTIK GAGAL:
+Part PC belum lengkap! Anda harus memilih seluruh komponen dari toko (10 komponen hardware dasar).</span>`;
+                return;
+            }
+
+            // 2. Cek Overbudget Pelanggan
+            if (totalModal > currentCustomer.budget) {
+                document.getElementById('output').innerHTML = `<span class="fail">❌ BIAYA OVERBUDGET:
+Modal rakitan (${formatRupiah(totalModal)}) melebihi budget pelanggan (${formatRupiah(currentCustomer.budget)})! Pelanggan menolak pesanan.</span>`;
+                return;
+            }
+
+            // 3. Cek Kompatibilitas Socket CPU & Size Casing
+            if (cpu.socket !== mobo.socket) {
+                document.getElementById('output').innerHTML = `<span class="fail">❌ ERROR KOMPATIBILITAS SOCKET:
+Socket CPU (${cpu.socket}) tidak cocok dengan Motherboard (${mobo.socket}). PC tidak bisa dipasang!</span>`;
+                return;
+            }
+
+            if (mobo.form === "ATX" && casePC.maxForm === "M-ATX") {
+                document.getElementById('output').innerHTML = `<span class="fail">❌ ERROR KOMPATIBILITAS CASING:
+Motherboard berukuran ATX tidak muat masuk ke dalam Casing Micro-ATX!</span>`;
+                return;
+            }
+
+            // 4. TEST WATT (POWER CONSUMPTION)
+            const systemWattage = Math.round((cpu.tdp + gpu.tdp + 60) * 1.2);
+            log += `=== ⚡ TEST DAYA (WATT) ===\n`;
+            log += `Estimasi Beban Daya Peak: ${systemWattage} W\n`;
+            log += `Kapasitas PSU Dibeli   : ${psu.watt} W\n`;
+            if (psu.watt < systemWattage) {
+                log += `<span class="fail">STATUS: PSU OVERLOAD! PC akan mati mendadak saat diuji game berat.</span>\n\n`;
+                document.getElementById('output').innerHTML = log;
+                return;
+            } else {
+                log += `<span class="pass">STATUS: DAYA AMAN! Suplai listrik stabil.</span>\n\n`;
+            }
+
+            // 5. TEST THERMAL & SUHU (Pendinginan Komputasi)
+            const totalCooling = cooler.cooling + fan.coolingBonus + paste.coolingBonus;
+            const estTemp = Math.round(38 + (cpu.tdp / totalCooling) * 20);
+            let thermalThrottling = 1.0;
+            
+            log += `=== 🌡️ TEST SUHU (THERMAL) ===\n`;
+            log += `Total Cooling Score: ${totalCooling} Pts\n`;
+            log += `Suhu Peak CPU     : ${estTemp}°C\n`;
+            if (estTemp > 85) {
+                thermalThrottling = 0.55;
+                log += `<span class="fail">STATUS: OVERHEAT! CPU Thermal Throttling (Performa merosot 45%).</span>\n\n`;
+            } else {
+                log += `<span class="pass">STATUS: SUHU OPTIMAL! Pendinginan bekerja sempurna.</span>\n\n`;
+            }
+
+            // 6. TEST BOTTLENECK
+            log += `=== ⚖️ TEST BOTTLENECK ===\n`;
+            const ratio = cpu.score / gpu.score;
+            if (ratio < 0.75) {
+                log += `<span class="warn">STATUS: GPU Bottleneck (Prosesor terlalu cepat dibanding GPU).</span>\n\n`;
+            } else if (ratio > 1.35) {
+                log += `<span class="warn">STATUS: CPU Bottleneck (GPU terlalu kencang untuk CPU ini).</span>\n\n`;
+            } else {
+                log += `<span class="pass">STATUS: BALANCED SYSTEM! Kombinasi CPU & GPU sangat serasi.</span>\n\n`;
+            }
+
+            // 7. TEST BENCHMARK & GAME FPS
+            const benchmarkScore = Math.round(((cpu.score * 0.4) + (gpu.score * 0.5) + (ram.speed * 2)) * thermalThrottling);
+            let baseFps = ((gpu.score / 140) * (cpu.score / 18000)) / monitor.resFactor;
+            if (currentCustomer.game.includes("Valorant")) baseFps *= 2.2; // Game ringan esport
+            const finalFps = Math.round(baseFps * thermalThrottling);
+
+            log += `=== 📊 HASIL BENCHMARK & TESTING GAME ===\n`;
+            log += `3DMark Benchmark Score: ${benchmarkScore} Pts\n`;
+            log += `Target Game (${currentCustomer.game}): ${finalFps} FPS (Target: ${currentCustomer.reqFps} FPS)\n`;
+            log += `Waktu Loading Game      : ${storage.loadTime} Detik\n\n`;
+
+            // 8. EVALUASI KEPUASAN PELANGGAN
+            let isSuccess = true;
+            let failReason = "";
+
+            if (finalFps < currentCustomer.reqFps) {
+                isSuccess = false;
+                failReason = `FPS Game (${finalFps} FPS) tidak mencapai target pelanggan (${currentCustomer.reqFps} FPS).`;
+            } else if (ram.size < currentCustomer.minRam) {
+                isSuccess = false;
+                failReason = `RAM (${ram.size}GB) kurang dari syarat minimal pelanggan (${currentCustomer.minRam}GB).`;
+            } else if (currentCustomer.reqType === "SSD" && storage.type !== "SSD") {
+                isSuccess = false;
+                failReason = `Pelanggan meminta SSD, tetapi Anda memasang HDD.`;
+            } else if (estTemp > 85) {
+                isSuccess = false;
+                failReason = `Suhu PC overheat (${estTemp}°C) sehingga game patah-patah.`;
+            }
+
+            log += `=== 🏆 EVALUASI AKHIR KARIR ===\n`;
+            if (isSuccess) {
+                const profit = currentCustomer.budget - totalModal;
+                shopMoney += profit;
+                completedOrders++;
+
+                log += `<span class="pass">HASIL: 
